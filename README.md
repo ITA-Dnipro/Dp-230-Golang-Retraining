@@ -21,11 +21,11 @@ Checks for:
 + LFI
 
 Features:
-**Works in microservice architecture**
-**Uses own crawler**
-**Cooperates with Kafka service**
-**Implements different issues scanning**
-**Saves and sends report to user by the end**
++ Works in microservice architecture
++ Uses own crawler
++ Cooperates with Kafka service
++ Implements various issues scanning
++ Sends report to user when check completed
 
 ## Roadmap
 
@@ -39,12 +39,11 @@ Features:
 - Provide 90% test coverage
 
 
-
 ## Team
 
 - [@Mentor Volodymyr](https://github.com/VovaD199)
-- [@Technical Expert Pavel]()
-- [@Technical Expert Denis]()
+- [@Technical Expert Pavel](https://github.com/PavelAD)
+- [@Technical Expert Denis](https://github.com/away4people)
 - [@Andrew](https://github.com/OlegovichAndrew)
 - [@Kostia](https://github.com/Moontary)
 - [@Igor](https://github.com/igkostyuk)
