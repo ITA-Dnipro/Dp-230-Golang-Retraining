@@ -1,0 +1,97 @@
+version: "3"
+services:
+  zookeeper:
+    container_name: parabellum-zookeeper
+    image: wurstmeister/zookeeper
+
+  kafka:
+    container_name: parabellum-kafka
+    image: wurstmeister/kafka:2.12-2.3.1
+    restart: on-failure
+    depends_on:
+      - zookeeper
+    environment:
+      KAFKA_VERSION: '2.3.1'
+      KAFKA_BROKER_ID: '1'
+      KAFKA_CREATE_TOPICS: 'API-Service-Message:1:1,XSS-check:1:1,5xx-check:1:1'
+      KAFKA_DELETE_TOPIC_ENABLE: 'true'
+      KAFKA_ADVERTISED_HOST_NAME: 'localhost'
+      KAFKA_ADVERTISED_PORT: '9092'
+      KAFKA_ZOOKEEPER_CONNECT: 'zookeeper:2181'
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: 'true'
+      KAFKA_MESSAGE_MAX_BYTES: '200000000'
+      KAFKA_LISTENERS: 'PLAINTEXT://:9092,SASL_PLAINTEXT://:9093'
+      KAFKA_ADVERTISED_LISTENERS: 'PLAINTEXT://kafka:9092,SASL_PLAINTEXT://kafka:9093'
+      KAFKA_SASL_ENABLED_MECHANISMS: 'PLAIN,SCRAM-SHA-256,SCRAM-SHA-512'
+      KAFKA_AUTHORIZER_CLASS_NAME: 'kafka.security.auth.SimpleAclAuthorizer'
+      KAFKA_ALLOW_EVERYONE_IF_NO_ACL_FOUND: 'true'
+      KAFKA_OPTS: "-Djava.security.auth.login.config=/opt/kafka/config/kafka_server_jaas.conf"
+      CUSTOM_INIT_SCRIPT: |-
+        echo -e 'KafkaServer {\norg.apache.kafka.common.security.scram.ScramLoginModule required\n username="adminscram"\n password="admin-secret";\n org.apache.kafka.common.security.plain.PlainLoginModule required\n username="adminplain"\n password="admin-secret"\n user_adminplain="admin-secret";\n  };' > /opt/kafka/config/kafka_server_jaas.conf;
+        /opt/kafka/bin/kafka-configs.sh --zookeeper zookeeper:2181 --alter --add-config 'SCRAM-SHA-256=[password=admin-secret-256],SCRAM-SHA-512=[password=admin-secret-512]' --entity-type users --entity-name adminscram
+
+  mongodb:
+    image: mongo:latest
+    restart: always
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: admin
+      MONGODB_DATABASE: products
+    ports:
+      - 27017:27017
+    volumes:
+      - mongodb_data_container:/data/db
+
+
+  #OUR SERVICES
+
+  kafka-producer:
+    container_name: parabellum-kafka-producer
+    image: dmytrothr/parabellum.kafka-producer
+    restart: on-failure
+    environment:
+      GRPC_ADDR: 'result-collector:9090'
+      KAFKA_URL: 'kafka:9092'
+    depends_on:
+      - kafka
+    ports:
+      - 8888:8888
+
+  crawler:
+    container_name: parabellum-crawler
+    image: dmytrothr/parabellum.crawler
+    restart: on-failure
+    environment:
+      KAFKA_URL: 'kafka:9092'
+    depends_on:
+      - kafka
+      - kafka-producer
+
+  test-xss:
+    container_name: parabellum-test-xss
+    image: dmytrothr/parabellum.test-xss
+    restart: on-failure
+    environment:
+      XSS_KAFKA_BROKERS: 'kafka:9092'
+      XSS_KAFKA_TOPIC: 'XSS-check'
+      XSS_GRPC_SERVER: 'result-collector:9090'
+    depends_on:
+      - kafka
+      - crawler
+
+  result-collector:
+    container_name: parabellum-result-collector
+    image: dmytrothr/parabellum.result-collector
+    restart: on-failure
+    environment:
+      XSS_SERVER_PORT: ':9090'
+      XSS_MONGODB_URI: 'mongodb://mongodb:27017'
+    depends_on:
+      - mongodb
+
+volumes:
+  mongodb_data_container:
+
+networks:
+  parabellum-net:
+    driver: bridge
