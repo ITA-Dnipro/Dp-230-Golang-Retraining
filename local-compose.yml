@@ -13,7 +13,7 @@ services:
     environment:
       KAFKA_VERSION: '2.3.1'
       KAFKA_BROKER_ID: '1'
-      KAFKA_CREATE_TOPICS: 'API-Service-Message:1:1,XSS-check:1:1,5xx-check:1:1,SQLI-check:1:1'
+      KAFKA_CREATE_TOPICS: 'API-Service-Message:1:1,XSS-check:1:1,5XX-check:1:1,SQLI-check:1:1'
       KAFKA_DELETE_TOPIC_ENABLE: 'true'
       KAFKA_ADVERTISED_HOST_NAME: 'localhost'
       KAFKA_ADVERTISED_PORT: '9092'
