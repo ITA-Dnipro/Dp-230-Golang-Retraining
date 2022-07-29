@@ -62,6 +62,7 @@ services:
     image: dmytrothr/parabellum.crawler
     restart: on-failure
     environment:
+      GRPC_ADDR: 'result-collector:9090'
       KAFKA_URL: 'kafka:9092'
     depends_on:
       - kafka
